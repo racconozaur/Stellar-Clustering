@@ -1,0 +1,12 @@
+# Ignore specific virtual environments
+.venv-network3.9.2/
+.venv-vis/
+
+.venv-*/
+
+.venv/
+**/.venv/
+
+*.csv
+*.pkl
+network/Role2Vec/role2vec/

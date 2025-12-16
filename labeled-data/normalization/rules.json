@@ -1,0 +1,56 @@
+[
+  { "pattern": "\\bcoinbase\\b|coinbase (deposit|deposits|withdrawal|withdrawals)", "entity": "Coinbase" },
+  { "pattern": "\\bbinance\\b|binance (deposit|deposits|withdrawal|withdrawals)", "entity": "Binance" },
+  { "pattern": "\\bkraken\\b", "entity": "Kraken" },
+  { "pattern": "\\bgate\\.?io\\b|\\bgate io\\b", "entity": "GateIO" },
+  { "pattern": "\\bokx\\b|\\bokex\\b", "entity": "OKX" },
+  { "pattern": "\\bbitfinex\\b", "entity": "Bitfinex" },
+  { "pattern": "\\bbitstamp\\b", "entity": "Bitstamp" },
+  { "pattern": "\\bbitpanda\\b|bitpanda (deposit|deposits|withdrawal|withdrawals)", "entity": "Bitpanda" },
+  { "pattern": "\\bbitmart\\b", "entity": "Bitmart" },
+  { "pattern": "\\bmexc\\b", "entity": "MEXC" },
+  { "pattern": "\\bkucoin\\b", "entity": "KuCoin" },
+  { "pattern": "\\bupbit\\b|upbit (deposit|deposits|withdrawal|withdrawals)", "entity": "Upbit" },
+  { "pattern": "\\bparibu\\b", "entity": "Paribu" },
+  { "pattern": "\\bgopax\\b", "entity": "GOPAX" },
+  { "pattern": "\\bexmo\\b", "entity": "EXMO" },
+  { "pattern": "\\bnaobtc\\b", "entity": "NaoBTC" },
+  { "pattern": "blockchain\\.com|blockchain\\.com interest", "entity": "Blockchain.com" },
+  { "pattern": "\\bmercado bitcoin\\b", "entity": "Mercado Bitcoin" },
+  { "pattern": "\\bindodax\\b", "entity": "IndoDax" },
+  { "pattern": "\\bokcoin\\b", "entity": "Okcoin" },
+  { "pattern": "\\bzebpay\\b", "entity": "Zebpay" },
+
+  { "pattern": "\\blobstr\\b|lobstr assets custodian|lobstr merge tool", "entity": "Lobstr" },
+  { "pattern": "\\bvibrant\\b", "entity": "Vibrant" },
+  { "pattern": "\\bchangenow\\b", "entity": "ChangeNow" },
+  { "pattern": "\\bchangehero\\b", "entity": "ChangeHero" },
+  { "pattern": "\\bsideshift\\b", "entity": "SideShift" },
+  { "pattern": "cex\\.io|\\bcex io\\b", "entity": "CEX.IO" },
+  { "pattern": "\\bripplefox\\b", "entity": "RippleFox" },
+  { "pattern": "\\bcentre\\b", "entity": "Centre" },
+  { "pattern": "\\bpapaya ?bot\\b", "entity": "PapayaBot" },
+  { "pattern": "\\bstormgain\\b", "entity": "StormGain" },
+  { "pattern": "\\bwirex\\b|wirex (deposit|deposits|withdrawal|withdrawals)", "entity": "Wirex" },
+  { "pattern": "\\buphold\\b", "entity": "Uphold" },
+  { "pattern": "\\bbitvavo\\b", "entity": "Bitvavo" },
+  { "pattern": "\\bgoodx\\b", "entity": "GoodX" },
+  { "pattern": "\\bluckybird\\b", "entity": "Luckybird" },
+  { "pattern": "\\bsyklo\\b", "entity": "Syklo" },
+
+  { "pattern": "\\banchorusd\\b", "entity": "AnchorUSD" },
+  { "pattern": "\\baqua\\b|aqua (mm rewards|issuer|airdrop)", "entity": "AQUA" },
+  { "pattern": "\\bburn account\\b", "entity": "Burn Account" },
+  { "pattern": "\\bspam issuer\\b", "entity": "Spam Issuer" },
+
+  { "pattern": "\\bsdf\\b|lightyear option agreement|ecosystem support|user acquisition|developer support|direct development|early employee grants", "entity": "SDF" },
+
+  { "pattern": "\\btmm bot\\b", "entity": "TMM bot" },
+
+  { "pattern": "ultracapital", "entity": "UltraCapital" },
+
+  { "pattern": "\\bexlm\\b", "entity": "EXLM" },
+
+
+  { "pattern": "scam|minter|counterfeit(er)?|counterfeiter|phish|launder|laundering|air[- ]?drop|fraud|spam|scam[- ]?minter|serial scam|scam[- ]?counterfeit|scam[- ]?counterfeiter", "entity": "SCAM" }
+]
