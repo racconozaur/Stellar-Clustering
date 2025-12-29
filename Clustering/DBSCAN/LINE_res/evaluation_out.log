@@ -1,0 +1,59 @@
+Loading graph...
+Graph loaded: 4315652 nodes, 7100549 edges (15.28s)
+
+Loading ground truth labels...
+Loaded 8336 labeled nodes (0.00s)
+
+Loading HDBSCAN results from hdbscan_mcs20...
+Loaded 4315652 node assignments (68.90s)
+
+Extracting cluster assignments...
+Noise points (label -1): 43627 (1.01%)
+
+Converting to communities (excluding noise)...
+Found 2 communities (excluding noise) (0.78s)
+
+Computing intrinsic metrics (excluding noise points)...
+  Creating subgraph with 4272025 clustered nodes...
+  Subgraph created: 4272025 nodes, 1050886 edges (29.99s)
+  Modularity: -0.0000 (15.73s)
+  Coverage: 0.9884 (16.49s)
+  Computing conductance for 2 communities...
+  Conductance: 1.0000 (15.52s)
+
+Computing extrinsic metrics (including noise as cluster -1)...
+  Labeled nodes: 8336
+  Common nodes for evaluation: 8336
+  Coverage: 100.00%
+  NMI:     0.0333
+  ARI:     0.0755
+  Purity:  0.9338
+  Extrinsic metrics computed (3.62s)
+
+============================================================
+HDBSCAN_LINE_mcs50 EVALUATION RESULTS
+============================================================
+Number of clusters: 2
+Noise points:       43627 (1.01%)
+
+Intrinsic Metrics (excluding noise):
+  Modularity:         -0.0000
+  Conductance:        1.0000
+  Coverage:           0.9884
+
+Extrinsic Metrics (noise as separate cluster):
+  NMI:                0.0333
+  ARI:                0.0755
+  Purity:             0.9338
+  Labeled Coverage:   1.0000
+
+Cluster statistics (excluding noise):
+  Mean size:   2136012.5
+  Median size: 2136012.5
+  Max size:    4272003
+  Min size:    22
+  Std size:    2135990.5
+
+Results saved to 'LINE_res/evaluation/hdbscan_node2vec_mcs50_evaluation.csv'
+
+Total time: 166.51s

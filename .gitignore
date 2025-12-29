@@ -9,4 +9,6 @@
 
 *.csv
 *.pkl
+*.log
+*.txt
 network/Role2Vec/role2vec/

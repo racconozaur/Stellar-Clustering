@@ -1,10 +1,14 @@
 import pandas as pd
 from sklearn.cluster import KMeans
 
-PATH = '~/stellar-clustering/publication/Clustering/Embeddings Generation/Node2Vec/n2v_pecenpy/txlcc_node2vec_d128_p1_q2_wl30_nw10_w10_pecanpy.csv'
+#PATH = '~/stellar-clustering/publication/Clustering/Embeddings Generation/Node2Vec/n2v_pecenpy/txlcc_node2vec_d128_p1_q2_wl30_nw10_w10_pecanpy.csv'
+
+PATH = '/home/user/jfayzullaev/stellar-clustering/publication/Clustering/Embeddings Generation/LINE/stellar_line_embeddings_order2.csv'
 
 embeddings = pd.read_csv(PATH)
-X = embeddings.drop(columns=["account_id"]).values
+
+# node_id account_id
+X = embeddings.drop(columns=["node_id"]).values
 
 
 K_VALUES = [10, 15, 20, 30, 40, 50, 65, 70, 75, 80, 100, 120, 150, 180, 210, 250, 300, 350, 400]
@@ -16,5 +20,7 @@ for k in K_VALUES:
 
 
 
-embeddings.to_csv("Node2Vec_res/transactions_node2vec_kmeans_results.csv", index=False)
+embeddings.to_csv("LINE_res/transactions_line_kmeans_results.csv", index=False)
+
+
 print("Saved results")
