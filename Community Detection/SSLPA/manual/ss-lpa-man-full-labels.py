@@ -156,12 +156,6 @@ def run_sslpa_manual(graph_path, LABELS, output_prefix):
 if __name__ == "__main__":
     start_time = datetime.now()
     print(f"[{timestamp()}] Starting SSLPA")
-
-    labels, stats = run_sslpa_manual(
-        "~/stellar-clustering/publication/data/LCC/LCC_G_tx_undirected_weighted.pkl",
-        "~/stellar-clustering/publication/labeled-data/map-labels/labels_mapped.csv",
-        "raw/sslpa_tx_lcc",
-    )
     
 
     labels, stats = run_sslpa_manual(
