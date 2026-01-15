@@ -19,19 +19,22 @@ SSLPA_LABELS = os.path.expanduser(
 )
 # ^ adjust path if different
 
+
+
+D_MIN = 2
+R_MIN = 0.4
+MODE = "scam_only"      # 'scam_only' or 'all_labels'
+
+
 OUT_NCSF_DIR = os.path.expanduser(
-    "~/stellar-clustering/publication/Community Detection/SSLPA/manual/normalized/ncsf"
+    f"~/stellar-clustering/publication/Community Detection/SSLPA/manual/normalized/ncsf/step1/{MODE}"
 )
 OUT_STATS_DIR = os.path.expanduser(
-    "~/stellar-clustering/publication/manual/normalized/ncsf/stats"
+    "~/stellar-clustering/publication/manual/normalized/ncsf/step1/stats"
 )
 
 os.makedirs(OUT_NCSF_DIR, exist_ok=True)
 os.makedirs(OUT_STATS_DIR, exist_ok=True)
-
-D_MIN = 3
-R_MIN = 0.5
-MODE = "all_labels"      # 'scam_only' or 'all_labels'
 
 
 def ts():

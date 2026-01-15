@@ -34,20 +34,19 @@ BASE_DIR = Path("/home/user/jfayzullaev/stellar-clustering/publication")
 
 # MODE: Choose which label set to use
 # Options: "scam_only" or "all_labels"
-MODE = "scam_only"  # Change this to "scam_only" if you want to use scam-only labels
+MODE = "all_labels"
 
 # NCSF (NCLF) output with per-node labels on the SSLPA LCC.
 NCSF_DIR = BASE_DIR / "Community Detection" / "SSLPA" / "manual" / "normalized" / "ncsf"
-NCSF_LABELS_FILE = NCSF_DIR / "step1" / f"sslpa_tx_lcc_ncsf_d3_r0.5_{MODE}.csv"
+STEP1_DIR = NCSF_DIR / "step1" / MODE
 
 # Where to put the semi-supervised splits (separate directory per mode)
 # Save in the same directory as this script (step6)
 SCRIPT_DIR = Path(__file__).parent
-SEMI_DIR = SCRIPT_DIR / "semi_supervised" / MODE
-SEMI_DIR.mkdir(parents=True, exist_ok=True)
+SEMI_BASE_DIR = SCRIPT_DIR / "semi_supervised" / MODE
 
 # Fractions of labels to hide (for evaluation only)
-MASK_FRACTIONS = [0.3]  # e.g. [0.1, 0.3, 0.5]
+MASK_FRACTIONS = [0.1, 0.2, 0.3, 0.5]
 
 # Fixed RNG for reproducibility
 RANDOM_STATE = 46
@@ -73,46 +72,40 @@ def make_split(labels_df: pd.DataFrame, mask_fraction: float, rng: np.random.Gen
     return train_df, test_df, split_flag
 
 
-def main():
-    if MODE not in ("scam_only", "all_labels"):
-        raise ValueError(
-            f"Invalid MODE: {MODE}\n"
-            "MODE must be either 'scam_only' or 'all_labels'."
-        )
+def process_file(ncsf_file: Path, file_name: str):
+    """Process a single NCSF label file and create splits."""
+    print(f"\n{'='*80}")
+    print(f"Processing file: {file_name}")
+    print(f"{'='*80}")
 
-    if not NCSF_LABELS_FILE.exists():
-        raise FileNotFoundError(
-            f"NCSF label file not found: {NCSF_LABELS_FILE}\n"
-            f"→ Make sure you've run the NCSF labeling step with MODE='{MODE}' "
-            "and that the output path matches this config. "
-            f"Available modes: 'scam_only', 'all_labels'"
-        )
-
-    print(f"Running in MODE: {MODE}")
-    print(f"Loading labels from: {NCSF_LABELS_FILE}")
-
-    labels = pd.read_csv(NCSF_LABELS_FILE)
+    print(f"Loading labels from: {ncsf_file}")
+    labels = pd.read_csv(ncsf_file)
 
     # Basic sanity checks
     for col in (NODE_COL, LABEL_COL):
         if col not in labels.columns:
             raise KeyError(
-                f"Expected column '{col}' in {NCSF_LABELS_FILE.name}, "
+                f"Expected column '{col}' in {ncsf_file.name}, "
                 f"but got columns: {list(labels.columns)}.\n"
                 "→ Adjust NODE_COL / LABEL_COL at the top of the script."
             )
 
     # Drop duplicates just in case
     labels = labels.drop_duplicates(subset=[NODE_COL]).reset_index(drop=True)
+    print(f"Loaded {len(labels):,} labeled nodes")
+
+    # Create output directory for this file
+    # Extract parameter name from filename (e.g., "d3_r0.5" from "sslpa_tx_lcc_ncsf_d3_r0.5_scam_only.csv")
+    file_base = file_name.replace(f"_{MODE}.csv", "").replace("sslpa_tx_lcc_ncsf_", "")
+    file_output_dir = SEMI_BASE_DIR / file_base
 
     rng = np.random.default_rng(RANDOM_STATE)
 
-    print(f"Loaded {len(labels):,} labeled nodes from NCSF file: {NCSF_LABELS_FILE}")
-    print(f"Will create splits for mask fractions: {MASK_FRACTIONS}")
+    print(f"Creating splits for mask fractions: {MASK_FRACTIONS}")
 
     for frac in MASK_FRACTIONS:
         pct = int(frac * 100)
-        split_dir = SEMI_DIR / f"mask{pct}"
+        split_dir = file_output_dir / f"mask{pct}"
         split_dir.mkdir(parents=True, exist_ok=True)
 
         train_df, test_df, split_flag = make_split(labels, frac, rng)
@@ -130,25 +123,62 @@ def main():
         test_df.to_csv(test_true_path, index=False)
         all_with_split.to_csv(all_split_path, index=False)
 
-        print(f"\n[mask={frac:.2f}]")
-        print(f"  Train seeds: {len(train_df):,}")
-        print(f"  Test (masked) nodes: {len(test_df):,}")
-        print(f"  Saved train labels to: {train_path}")
-        print(f"  Saved test labels  to: {test_true_path}")
-        print(f"  Saved full split   to: {all_split_path}")
+        print(f"\n  [mask={frac:.0%}]")
+        print(f"    Train seeds: {len(train_df):,}")
+        print(f"    Test (masked) nodes: {len(test_df):,}")
+        print(f"    Output directory: {split_dir}")
 
-        print(
-            "  → When running SSLPA, use ONLY the train file as seeds.\n"
-            "    Treat the test nodes as 'unlabeled' (e.g., drop their labels or set them to -1/0)\n"
-            "    in your SSLPA implementation. After SSLPA converges, export predictions for *all*\n"
-            "    nodes in the split as:\n"
-            f"        {split_dir}/sslpa_predictions.csv\n"
-            "    with columns: account_id, predicted_label\n"
+    print(f"\n  ✓ Completed splits for {file_name}")
+    return file_output_dir
+
+
+def main():
+    if MODE not in ("scam_only", "all_labels"):
+        raise ValueError(
+            f"Invalid MODE: {MODE}\n"
+            "MODE must be either 'scam_only' or 'all_labels'."
         )
 
-    print("\nDone preparing semi-supervised splits.")
-    print(f"MODE: {MODE}")
-    print(f"Splits are under: {SEMI_DIR}")
+    if not STEP1_DIR.exists():
+        raise FileNotFoundError(
+            f"Step1 directory not found: {STEP1_DIR}\n"
+            f"→ Make sure you've run the NCSF labeling step with MODE='{MODE}' "
+            "and that the output path matches this config. "
+            f"Available modes: 'scam_only', 'all_labels'"
+        )
+
+    print(f"Running in MODE: {MODE}")
+    print(f"Looking for NCSF files in: {STEP1_DIR}")
+    print(f"Mask fractions: {MASK_FRACTIONS}")
+
+    # Find all CSV files in the step1 directory for this mode
+    ncsf_files = sorted(STEP1_DIR.glob("*.csv"))
+
+    if not ncsf_files:
+        raise FileNotFoundError(
+            f"No CSV files found in {STEP1_DIR}\n"
+            f"→ Make sure NCSF labeling step has been completed for MODE='{MODE}'"
+        )
+
+    print(f"\nFound {len(ncsf_files)} NCSF file(s) to process:")
+    for f in ncsf_files:
+        print(f"  - {f.name}")
+
+    # Process each file
+    processed_dirs = []
+    for ncsf_file in ncsf_files:
+        output_dir = process_file(ncsf_file, ncsf_file.name)
+        processed_dirs.append(output_dir)
+
+    print(f"\n{'='*80}")
+    print("DONE! All files processed successfully.")
+    print(f"{'='*80}")
+    print(f"\nMODE: {MODE}")
+    print(f"Processed {len(ncsf_files)} file(s)")
+    print(f"Mask fractions: {MASK_FRACTIONS}")
+    print(f"\nOutput directories:")
+    for d in processed_dirs:
+        print(f"  - {d}")
 
 
 if __name__ == '__main__':

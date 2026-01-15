@@ -65,7 +65,7 @@ MODE = "scam_only"
 # Semi-supervised splits directory
 SCRIPT_DIR = Path(__file__).parent
 STEP6_DIR = SCRIPT_DIR.parent / "step6"
-SEMI_DIR = STEP6_DIR / "semi_supervised" / MODE
+SEMI_BASE_DIR = STEP6_DIR / "semi_supervised" / MODE
 
 # Output evaluation results in the same directory as this script (step7)
 EVAL_OUTPUT_DIR = SCRIPT_DIR / "eval_results" / MODE
@@ -75,7 +75,7 @@ EVAL_A_PATH = EVAL_OUTPUT_DIR / "all_methods_filterA_summary.csv"
 EVAL_B_PATH = EVAL_OUTPUT_DIR / "all_methods_filterB_summary.csv"
 
 # Must match the fractions you used in sslpa_semi_supervised_eval.py
-MASK_FRACTIONS = [0.3]  # e.g. [0.1, 0.3, 0.5]
+MASK_FRACTIONS = [0.1, 0.2, 0.3, 0.5]  # e.g. [0.1, 0.3, 0.5]
 
 # Which original label values are treated as "SCAM" for the binary evaluation
 # Extend this set if you have other scam-specific labels (e.g., hacks).
@@ -100,22 +100,21 @@ def _to_binary(label: str) -> int:
     return 1 if label in SCAM_LABELS else 0
 
 
-def eval_mask_fraction(mask_fraction: float):
-    """Compute Filter A & B style metrics for a single mask fraction."""
+def eval_mask_fraction(file_base: str, mask_fraction: float):
+    """Compute Filter A & B style metrics for a single parameter config and mask fraction."""
     pct = int(mask_fraction * 100)
-    split_dir = SEMI_DIR / f"mask{pct}"
+    split_dir = SEMI_BASE_DIR / file_base / f"mask{pct}"
 
     true_path = split_dir / "sslpa_test_labels_true.csv"
     pred_path = split_dir / "sslpa_predictions.csv"
 
     if not true_path.exists():
-        print(f"[mask={mask_fraction:.2f}] Missing file: {true_path}")
+        print(f"[{file_base} | mask={mask_fraction:.0%}] Missing file: {true_path}")
         return None, None
 
     if not pred_path.exists():
-        print(f"[mask={mask_fraction:.2f}] Missing predictions file: {pred_path}")
-        print("  → Run your SSLPA implementation for this mask fraction,")
-        print("    then export predictions as 'sslpa_predictions.csv' in that folder.")
+        print(f"[{file_base} | mask={mask_fraction:.0%}] Missing predictions file: {pred_path}")
+        print("  → Run sslpa-70labels.py for this parameter configuration and mask fraction")
         return None, None
 
     true_df = pd.read_csv(true_path)
@@ -180,7 +179,7 @@ def eval_mask_fraction(mask_fraction: float):
     fmi = fowlkes_mallows_score(y_true, y_pred)
     hom, comp, v = homogeneity_completeness_v_measure(y_true, y_pred)
 
-    method_name = f"SSLPA_NCSF_mask{pct}"
+    method_name = f"SSLPA_NCSF_{file_base}_mask{pct}"
 
     row_A = {
         "method": method_name,
@@ -241,11 +240,11 @@ def eval_mask_fraction(mask_fraction: float):
     }
 
     print(
-        f"[mask={mask_fraction:.2f}] coverage={coverage:.3f}, "
+        f"[{file_base} | mask={mask_fraction:.0%}] coverage={coverage:.3f}, "
         f"NMI={nmi:.3f}, ARI={ari:.3f}, AMI={ami:.3f}, FMI={fmi:.3f}"
     )
     print(
-        f"[mask={mask_fraction:.2f}] SCAM precision={prec:.3f}, "
+        f"[{file_base} | mask={mask_fraction:.0%}] SCAM precision={prec:.3f}, "
         f"recall={rec:.3f}, F1={f1:.3f}"
     )
 
@@ -259,41 +258,94 @@ def main():
             "MODE must be either 'scam_only' or 'all_labels'."
         )
 
+    if not SEMI_BASE_DIR.exists():
+        raise FileNotFoundError(
+            f"Semi-supervised base directory not found: {SEMI_BASE_DIR}\n"
+            f"→ Run step6/sslpa_semi_supervised_eval.py first with MODE='{MODE}'"
+        )
+
+    # Find all parameter directories (e.g., d2_r0.4, d3_r0.5, d5_r0.6)
+    param_dirs = sorted([d for d in SEMI_BASE_DIR.iterdir() if d.is_dir()])
+
+    if not param_dirs:
+        raise FileNotFoundError(
+            f"No parameter directories found in {SEMI_BASE_DIR}\n"
+            f"→ Run step6/sslpa_semi_supervised_eval.py first with MODE='{MODE}'"
+        )
+
     print(f"Running in MODE: {MODE}")
-    print(f"Looking for semi-supervised splits in: {SEMI_DIR}")
+    print(f"Looking for semi-supervised splits in: {SEMI_BASE_DIR}")
+    print(f"\nFound {len(param_dirs)} parameter configuration(s):")
+    for d in param_dirs:
+        print(f"  - {d.name}")
+    print(f"\nMask fractions: {MASK_FRACTIONS}")
 
     rows_A = []
     rows_B = []
+    total_evals = 0
+    successful_evals = 0
 
-    for frac in MASK_FRACTIONS:
-        row_A, row_B = eval_mask_fraction(frac)
-        if row_A is not None:
-            rows_A.append(row_A)
-        if row_B is not None:
-            rows_B.append(row_B)
+    # Process each parameter configuration
+    for param_dir in param_dirs:
+        file_base = param_dir.name
+        print(f"\n{'='*80}")
+        print(f"Processing parameter configuration: {file_base}")
+        print(f"{'='*80}")
+
+        # Process each mask fraction
+        for frac in MASK_FRACTIONS:
+            total_evals += 1
+            row_A, row_B = eval_mask_fraction(file_base, frac)
+            if row_A is not None:
+                rows_A.append(row_A)
+                successful_evals += 1
+            if row_B is not None:
+                rows_B.append(row_B)
+
+    print(f"\n{'='*80}")
+    print("SAVING RESULTS")
+    print(f"{'='*80}")
 
     if rows_A:
         df_new_A = pd.DataFrame(rows_A)
         df_old_A = _load_summary(EVAL_A_PATH)
         if df_old_A is not None:
+            # Remove duplicates by method name if re-running
+            df_old_A = df_old_A[~df_old_A["method"].isin(df_new_A["method"])]
             df_out_A = pd.concat([df_old_A, df_new_A], ignore_index=True)
         else:
             df_out_A = df_new_A
         df_out_A.to_csv(EVAL_A_PATH, index=False)
-        print(f"Appended {len(rows_A)} rows to {EVAL_A_PATH}")
+        print(f"✓ Saved {len(rows_A)} Filter A results to: {EVAL_A_PATH}")
 
     if rows_B:
         df_new_B = pd.DataFrame(rows_B)
         df_old_B = _load_summary(EVAL_B_PATH)
         if df_old_B is not None:
+            # Remove duplicates by method name if re-running
+            df_old_B = df_old_B[~df_old_B["method"].isin(df_new_B["method"])]
             df_out_B = pd.concat([df_old_B, df_new_B], ignore_index=True)
         else:
             df_out_B = df_new_B
         df_out_B.to_csv(EVAL_B_PATH, index=False)
-        print(f"Appended {len(rows_B)} rows to {EVAL_B_PATH}")
+        print(f"✓ Saved {len(rows_B)} Filter B results to: {EVAL_B_PATH}")
+
+    print(f"\n{'='*80}")
+    print("SUMMARY")
+    print(f"{'='*80}")
+    print(f"MODE: {MODE}")
+    print(f"Parameter configurations: {len(param_dirs)}")
+    print(f"Mask fractions: {MASK_FRACTIONS}")
+    print(f"Total evaluations attempted: {total_evals}")
+    print(f"Successful evaluations: {successful_evals}")
+    print(f"Failed evaluations: {total_evals - successful_evals}")
 
     if not rows_A and not rows_B:
-        print("No new rows written – check that your semi-supervised prediction files exist.")
+        print("\n⚠ WARNING: No results written!")
+        print("  → Run step6/sslpa-70labels.py to generate predictions first")
+    else:
+        print(f"\n✓ DONE! Evaluation results saved.")
+    print(f"{'='*80}")
 
 
 if __name__ == "__main__":

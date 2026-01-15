@@ -26,7 +26,7 @@ import networkx as nx
 BASE_DIR = Path("/home/user/jfayzullaev/stellar-clustering/publication")
 
 # MODE: Must match what you used in step6
-MODE = "scam_only"  # Options: "scam_only" or "all_labels"
+MODE = "all_labels"  # Options: "scam_only" or "all_labels"
 
 # Graph file
 GRAPH_PATH = BASE_DIR / "data" / "LCC" / "LCC_G_tx_undirected_weighted.pkl"
@@ -34,10 +34,11 @@ GRAPH_PATH = BASE_DIR / "data" / "LCC" / "LCC_G_tx_undirected_weighted.pkl"
 # Semi-supervised splits directory (from step6)
 NCSF_DIR = BASE_DIR / "Community Detection" / "SSLPA" / "manual" / "normalized" / "ncsf"
 STEP6_DIR = NCSF_DIR / "step6"
-SEMI_DIR = STEP6_DIR / "semi_supervised" / MODE
+SEMI_BASE_DIR = STEP6_DIR / "semi_supervised" / MODE
+STEP1_DIR = NCSF_DIR / "step1" / MODE
 
 # Mask fractions to process
-MASK_FRACTIONS = [0.3]  # Must match step6 settings
+MASK_FRACTIONS = [0.1, 0.2, 0.3, 0.5]  # Must match step6 settings
 
 # SSLPA parameters
 MAX_ITER = 100
@@ -115,10 +116,10 @@ def sslpa_manual(G_nx, seeds, max_iter=100, convergence_threshold=0.001):
     return labels, iteration + 1
 
 
-def run_sslpa_for_mask(mask_fraction: float):
-    """Run SSLPA for a single mask fraction and save predictions."""
+def run_sslpa_for_mask(file_base: str, mask_fraction: float, G):
+    """Run SSLPA for a single file and mask fraction and save predictions."""
     pct = int(mask_fraction * 100)
-    split_dir = SEMI_DIR / f"mask{pct}"
+    split_dir = SEMI_BASE_DIR / file_base / f"mask{pct}"
 
     train_path = split_dir / "sslpa_train_labels.csv"
     output_path = split_dir / "sslpa_predictions.csv"
@@ -129,14 +130,8 @@ def run_sslpa_for_mask(mask_fraction: float):
         return False
 
     print(f"\n{'='*80}")
-    print(f"RUNNING SSLPA FOR MASK FRACTION {mask_fraction:.0%}")
+    print(f"FILE: {file_base} | MASK FRACTION: {mask_fraction:.0%}")
     print(f"{'='*80}\n")
-
-    # Load graph
-    print(f"[{timestamp()}] Loading graph from {GRAPH_PATH}")
-    with open(GRAPH_PATH, "rb") as f:
-        G = pickle.load(f)
-    print(f"[{timestamp()}] Graph loaded: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
 
     # Load train labels (seeds only)
     print(f"[{timestamp()}] Loading train labels from {train_path}")
@@ -202,25 +197,66 @@ def main():
             "→ Check that the graph pickle file exists at this path."
         )
 
-    if not SEMI_DIR.exists():
+    if not SEMI_BASE_DIR.exists():
         raise FileNotFoundError(
-            f"Semi-supervised splits directory not found: {SEMI_DIR}\n"
+            f"Semi-supervised splits directory not found: {SEMI_BASE_DIR}\n"
+            f"→ Run step6/sslpa_semi_supervised_eval.py first with MODE='{MODE}'"
+        )
+
+    # Find all parameter directories (e.g., d2_r0.4, d3_r0.5, d5_r0.6)
+    param_dirs = sorted([d for d in SEMI_BASE_DIR.iterdir() if d.is_dir()])
+
+    if not param_dirs:
+        raise FileNotFoundError(
+            f"No parameter directories found in {SEMI_BASE_DIR}\n"
             f"→ Run step6/sslpa_semi_supervised_eval.py first with MODE='{MODE}'"
         )
 
     print(f"Running in MODE: {MODE}")
-    print(f"Semi-supervised splits directory: {SEMI_DIR}")
+    print(f"Semi-supervised splits directory: {SEMI_BASE_DIR}")
+    print(f"\nFound {len(param_dirs)} parameter configuration(s) to process:")
+    for d in param_dirs:
+        print(f"  - {d.name}")
+
+    # Load graph once (shared across all runs)
+    print(f"\n[{timestamp()}] Loading graph from {GRAPH_PATH}")
+    with open(GRAPH_PATH, "rb") as f:
+        G = pickle.load(f)
+    print(f"[{timestamp()}] Graph loaded: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
 
     start_time = datetime.now()
+    total_runs = 0
+    successful_runs = 0
 
-    for frac in MASK_FRACTIONS:
-        success = run_sslpa_for_mask(frac)
-        if not success:
-            print(f"\n[WARNING] Failed to process mask fraction {frac:.0%}")
+    # Process each parameter configuration
+    for param_dir in param_dirs:
+        file_base = param_dir.name
+        print(f"\n{'#'*80}")
+        print(f"# Processing parameter configuration: {file_base}")
+        print(f"{'#'*80}")
+
+        # Process each mask fraction
+        for frac in MASK_FRACTIONS:
+            total_runs += 1
+            success = run_sslpa_for_mask(file_base, frac, G)
+            if success:
+                successful_runs += 1
+            else:
+                print(f"\n[WARNING] Failed to process {file_base} with mask fraction {frac:.0%}")
 
     total_time = (datetime.now() - start_time).total_seconds()
-    print(f"\n[{timestamp()}] Total time: {total_time:.2f}s ({total_time/60:.2f}m)")
+
     print(f"\n{'='*80}")
+    print("SUMMARY")
+    print(f"{'='*80}")
+    print(f"MODE: {MODE}")
+    print(f"Parameter configurations processed: {len(param_dirs)}")
+    print(f"Mask fractions: {MASK_FRACTIONS}")
+    print(f"Total runs: {total_runs}")
+    print(f"Successful runs: {successful_runs}")
+    print(f"Failed runs: {total_runs - successful_runs}")
+    print(f"Total time: {total_time:.2f}s ({total_time/60:.2f}m)")
+    print(f"{'='*80}")
     print("DONE!")
     print(f"{'='*80}")
 
