@@ -11,19 +11,19 @@ GRAPH_PKL = os.path.expanduser(
 )
 
 SEED_LABELS = os.path.expanduser(
-    "~/stellar-clustering/publication/labeled-data/normalization/labels_mapped_normalized.csv"
+    "~/stellar-clustering/publication/new-labled-data/normalization/labeled_nodes_in_graph.csv"
 )
 
 SSLPA_LABELS = os.path.expanduser(
-    "~/stellar-clustering/publication/Community Detection/SSLPA/manual/normalized/sslpa_tx_lcc_manual_labels.csv"
+    "~/stellar-clustering/publication/Community Detection/SSLPA/manual/normalized/ss-lpa-man-full-labels-RES/sslpa_tx_lcc_manual_labels.csv"
 )
-# ^ adjust path if different
+
 
 
 
 D_MIN = 2
 R_MIN = 0.4
-MODE = "scam_only"      # 'scam_only' or 'all_labels'
+MODE = "all_labels"      # 'scam_only' or 'all_labels'
 
 
 OUT_NCSF_DIR = os.path.expanduser(
@@ -153,9 +153,9 @@ def main():
     G = load_graph(GRAPH_PKL)
 
     # 1) Seeds (normalized labels_mapped_normalized.csv)
-    seed_df = pd.read_csv(SEED_LABELS).dropna(subset=["account_id", "name"])
+    seed_df = pd.read_csv(SEED_LABELS).dropna(subset=["node_id", "name_normalized"])
     seed_summary_csv = os.path.join(OUT_STATS_DIR, "labels_seed_summary.csv")
-    label_summary(seed_df.rename(columns={"name": "label"}),
+    label_summary(seed_df.rename(columns={"name_normalized": "label"}),
                   "label", seed_summary_csv)
 
     # 2) SSLPA output

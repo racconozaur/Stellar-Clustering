@@ -14,10 +14,10 @@ from sklearn.metrics import (
 
 # ---------- CONFIG ----------
 
-MODE = 'all_labels'
+MODE = 'scam_only'  # scam_only    all_labels
 
 NORM_LABELS_PATH = os.path.expanduser(
-    "~/stellar-clustering/publication/labeled-data/normalization/labels_mapped_normalized.csv"
+    "~/stellar-clustering/publication/new-labled-data/normalization/labeled_nodes_in_graph.csv"
 )
 
 # OUTPUT DIR
@@ -29,7 +29,9 @@ os.makedirs(OUT_DIR, exist_ok=True)
 N_SPLITS = 5
 RANDOM_STATE = 42
 
-# Labels to exclude from evaluation (generic / junk buckets)
+# Labels to exclude from evaluation (generic / junk buckets).
+# "Spam Issuer" and "UNLABELED" are not present in the new label file but kept
+# here for safety in case they appear in future label refreshes.
 EXCLUDE_LABELS = {
     "SCAM",
     "UltraCapital",
@@ -37,6 +39,11 @@ EXCLUDE_LABELS = {
     "Burn Account",
     "Spam Issuer",
 }
+
+# StratifiedKFold requires at least N_SPLITS samples per class.
+# Labels with fewer nodes than this are merged into "OTHER" rather than
+# dropped, so their nodes still contribute to coverage but don't cause a crash.
+MIN_CLASS_SIZE = N_SPLITS  # = 5
 
 # If ALLOWED_LABELS is empty → we use "all labels except EXCLUDE_LABELS".
 ALLOWED_LABELS = set()  # you can later hard-code only exchanges/services here.
@@ -60,7 +67,7 @@ METHOD_CONFIG = {
     },
     "SSLPA_NCSF": {
         "file": os.path.expanduser(
-            f"~/stellar-clustering/publication/Community Detection/SSLPA/manual/normalized/ncsf/step1/sslpa_tx_lcc_ncsf_d3_r0.5_{MODE}.csv"
+            f"~/stellar-clustering/publication/Community Detection/SSLPA/manual/normalized/ncsf/step1/{MODE}/sslpa_tx_lcc_ncsf_d3_r0.5_{MODE}.csv"
         ),
         "account_col": "node",
         "cluster_col": "label",
@@ -108,9 +115,12 @@ def ts():
 def load_filtered_labels():
     """
     Load normalized labels and keep only "entity labels" for Filter A.
+    Labels with fewer than MIN_CLASS_SIZE nodes are merged into "OTHER" so
+    StratifiedKFold (which needs >= N_SPLITS samples per class) does not crash.
     """
     df = pd.read_csv(NORM_LABELS_PATH)
-    df = df.dropna(subset=["account_id", "name"]).drop_duplicates(subset=["account_id"])
+    df = df.dropna(subset=["node_id", "name_normalized"]).drop_duplicates(subset=["node_id"])
+    df = df.rename(columns={"node_id": "account_id", "name_normalized": "name"})
 
     df["name"] = df["name"].astype(str)
     df["account_id"] = df["account_id"].astype(str)
@@ -119,6 +129,13 @@ def load_filtered_labels():
         df = df[df["name"].isin(ALLOWED_LABELS)]
     else:
         df = df[~df["name"].isin(EXCLUDE_LABELS)]
+
+    # Merge rare classes into "OTHER" to satisfy StratifiedKFold minimum.
+    counts = df["name"].value_counts()
+    rare = set(counts[counts < MIN_CLASS_SIZE].index)
+    if rare:
+        print(f"[{ts()}] Merging {len(rare)} rare labels (< {MIN_CLASS_SIZE} nodes) → 'OTHER'")
+        df["name"] = df["name"].apply(lambda x: "OTHER" if x in rare else x)
 
     print(f"[{ts()}] Filter A – labeled entity accounts: {len(df):,}")
     print(f"[{ts()}] Unique labels after filtering: {df['name'].nunique():,}")

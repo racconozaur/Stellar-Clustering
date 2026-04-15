@@ -34,7 +34,7 @@ BASE_DIR = Path("/home/user/jfayzullaev/stellar-clustering/publication")
 
 # MODE: Choose which label set to use
 # Options: "scam_only" or "all_labels"
-MODE = "all_labels"
+MODE = "scam_only"
 
 # NCSF (NCLF) output with per-node labels on the SSLPA LCC.
 NCSF_DIR = BASE_DIR / "Community Detection" / "SSLPA" / "manual" / "normalized" / "ncsf"

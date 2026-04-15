@@ -87,7 +87,17 @@ def compute_intrinsic_metrics(G, labels_dict):
     print(f"[{timestamp()}]   Modularity: {modularity:.4f} ({(datetime.now()-metric_start).total_seconds():.2f}s)")
     
     metric_start = datetime.now()
-    coverage = nx.community.coverage(G_labeled, communities)
+    try:
+        coverage = nx.algorithms.community.quality.coverage(G_labeled, communities)
+    except AttributeError:
+        # NetworkX 3.x removed coverage from quality module; compute manually
+        node_to_comm = {}
+        for comm in communities:
+            for node in comm:
+                node_to_comm[node] = id(comm)
+        intra = sum(1 for u, v in G_labeled.edges() if node_to_comm.get(u) == node_to_comm.get(v))
+        total = G_labeled.number_of_edges()
+        coverage = intra / total if total > 0 else 0.0
     print(f"[{timestamp()}]   Coverage: {coverage:.4f} ({(datetime.now()-metric_start).total_seconds():.2f}s)")
     
 
@@ -162,15 +172,15 @@ def run_sslpa_5fold_cv(graph_path, labels_path, output_prefix, n_splits=5, max_i
     print(f"[{timestamp()}] Graph loaded: {G.number_of_nodes():,} nodes, {G.number_of_edges():,} edges")
     
     print(f"[{timestamp()}] Loading labeled data from {labels_path}")
-    labels_df = pd.read_csv(labels_path, usecols=["account_id", "name"]).dropna().drop_duplicates()
-    
+    labels_df = pd.read_csv(labels_path, usecols=["node_id", "name_normalized"]).dropna().drop_duplicates()
+
     graph_nodes = set(G.nodes())
-    labels_df = labels_df[labels_df["account_id"].isin(graph_nodes)]
-    
+    labels_df = labels_df[labels_df["node_id"].isin(graph_nodes)]
+
     print(f"[{timestamp()}] Labeled nodes in graph: {len(labels_df):,}")
-    
-    labeled_nodes = labels_df["account_id"].values
-    labeled_labels = labels_df["name"].values
+
+    labeled_nodes = labels_df["node_id"].values
+    labeled_labels = labels_df["name_normalized"].values
     
 
     kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
@@ -351,7 +361,7 @@ if __name__ == "__main__":
     
     df_folds_norm, summary_norm = run_sslpa_5fold_cv(
         graph_path="~/stellar-clustering/publication/data/LCC/LCC_G_tx_undirected_weighted.pkl",
-        labels_path="~/stellar-clustering/publication/labeled-data/normalization/labels_mapped_normalized.csv",
+        labels_path="~/stellar-clustering/publication/new-labled-data/normalization/labeled_nodes_in_graph.csv",
         output_prefix="sslpa",
         n_splits=5,
         max_iter=100

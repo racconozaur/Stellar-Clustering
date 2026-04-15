@@ -1,0 +1,6 @@
+{
+  "repeat_id": "repeat_03",
+  "random_seed": 103,
+  "train_ratio_within_development": 0.875,
+  "val_ratio_within_development": 0.125
+}

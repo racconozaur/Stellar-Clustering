@@ -1,0 +1,8 @@
+{
+  "repeat_id": "repeat_05",
+  "branch": "multiclass",
+  "d_min": 10,
+  "r_min": 0.3,
+  "selection_metric": "macro_f1",
+  "selection_value": 0.5668414154652687
+}

@@ -26,7 +26,7 @@ import networkx as nx
 BASE_DIR = Path("/home/user/jfayzullaev/stellar-clustering/publication")
 
 # MODE: Must match what you used in step6
-MODE = "all_labels"  # Options: "scam_only" or "all_labels"
+MODE = "scam_only"  # Options: "scam_only" or "all_labels"
 
 # Graph file
 GRAPH_PATH = BASE_DIR / "data" / "LCC" / "LCC_G_tx_undirected_weighted.pkl"

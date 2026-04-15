@@ -60,7 +60,7 @@ NCSF_DIR = BASE_DIR / "Community Detection" / "SSLPA" / "manual" / "normalized" 
 # MODE: Choose which label set to use
 # Options: "scam_only" or "all_labels"
 # Must match what you used in sslpa_semi_supervised_eval.py
-MODE = "scam_only"
+MODE = "all_labels"
 
 # Semi-supervised splits directory
 SCRIPT_DIR = Path(__file__).parent

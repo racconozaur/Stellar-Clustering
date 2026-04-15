@@ -11,4 +11,7 @@
 *.pkl
 *.log
 *.txt
+*.png
+*.pdf
+*.zip
 network/Role2Vec/role2vec/

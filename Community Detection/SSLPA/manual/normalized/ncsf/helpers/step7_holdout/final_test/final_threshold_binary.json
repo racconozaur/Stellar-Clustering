@@ -1,0 +1,7 @@
+{
+  "branch": "binary",
+  "d_min": 10,
+  "r_min": 0.8,
+  "selection_metric": "mean_validation_f1",
+  "selection_value": 0.9950248756218906
+}

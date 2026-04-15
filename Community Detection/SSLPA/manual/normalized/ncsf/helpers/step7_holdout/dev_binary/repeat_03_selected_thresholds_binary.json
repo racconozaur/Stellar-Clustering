@@ -1,0 +1,8 @@
+{
+  "repeat_id": "repeat_03",
+  "branch": "binary",
+  "d_min": 10,
+  "r_min": 0.8,
+  "selection_metric": "f1",
+  "selection_value": 0.9950248756218906
+}

@@ -73,8 +73,8 @@ def run_sslpa_manual(graph_path, LABELS, output_prefix):
     print(f"[{timestamp()}] Graph loaded: {G_nx.number_of_nodes():,} nodes, {G_nx.number_of_edges():,} edges")
 
     print(f"[{timestamp()}] Loading seed labels")
-    seeds_df = pd.read_csv(LABELS, usecols=["account_id", "name"]).dropna().drop_duplicates()
-    seeds_all = dict(zip(seeds_df["account_id"].tolist(), seeds_df["name"].tolist()))
+    seeds_df = pd.read_csv(LABELS, usecols=["node_id", "name_normalized"]).dropna().drop_duplicates()
+    seeds_all = dict(zip(seeds_df["node_id"].tolist(), seeds_df["name_normalized"].tolist()))
     
     # Filter seeds present in graph
     nx_nodes = set(G_nx.nodes())
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
     labels, stats = run_sslpa_manual(
         "~/stellar-clustering/publication/data/LCC/LCC_G_tx_undirected_weighted.pkl",
-        "~/stellar-clustering/publication/labeled-data/normalization/labels_mapped_normalized.csv",
+        "~/stellar-clustering/publication/new-labled-data/normalization/labeled_nodes_in_graph.csv",
         "normalized/sslpa_tx_lcc",
     )
     
